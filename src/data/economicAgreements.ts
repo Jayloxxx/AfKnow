@@ -1,0 +1,158 @@
+export interface EconomicAgreement {
+  id: string;
+  name: string;
+  shortName: string;
+  type: 'trade_bloc' | 'fta' | 'bilateral' | 'investment';
+  color: string;
+  members: string[];  // country IDs
+  description: string;
+  foundedYear: number;
+  hqCity?: string;
+  source: string;
+  sourceLabel: string;
+}
+
+export const economicAgreements: EconomicAgreement[] = [
+  // ═══ AFRIKANISCHE HANDELSBLÖCKE ═══
+  {
+    id: 'afcfta',
+    name: 'African Continental Free Trade Area',
+    shortName: 'AfCFTA',
+    type: 'fta',
+    color: '#22c55e',
+    members: ['DZ', 'AO', 'BJ', 'BW', 'BF', 'BI', 'CV', 'CM', 'CF', 'TD', 'KM', 'CG', 'CD', 'CI', 'DJ', 'EG', 'GQ', 'ER', 'SZ', 'ET', 'GA', 'GM', 'GH', 'GN', 'GW', 'KE', 'LS', 'LR', 'LY', 'MG', 'MW', 'ML', 'MR', 'MU', 'MA', 'MZ', 'NA', 'NE', 'NG', 'RW', 'ST', 'SN', 'SC', 'SL', 'SO', 'ZA', 'SS', 'SD', 'TZ', 'TG', 'TN', 'UG', 'ZM', 'ZW'],
+    description: 'Größte Freihandelszone der Welt nach Mitgliederzahl. Ziel: Intra-afrikanischen Handel von 15% auf 50%+ steigern.',
+    foundedYear: 2018,
+    hqCity: 'Accra',
+    source: 'https://en.wikipedia.org/wiki/African_Continental_Free_Trade_Area',
+    sourceLabel: 'Wikipedia – AfCFTA',
+  },
+  {
+    id: 'ecowas',
+    name: 'Economic Community of West African States',
+    shortName: 'ECOWAS',
+    type: 'trade_bloc',
+    color: '#f59e0b',
+    members: ['BJ', 'CV', 'CI', 'GM', 'GH', 'GN', 'GW', 'LR', 'NG', 'SN', 'SL', 'TG'],
+    description: 'Westafrikanischer Wirtschafts- und Sicherheitsblock. Mali, Burkina Faso, Niger 2024 ausgetreten.',
+    foundedYear: 1975,
+    hqCity: 'Abuja',
+    source: 'https://en.wikipedia.org/wiki/ECOWAS',
+    sourceLabel: 'Wikipedia – ECOWAS',
+  },
+  {
+    id: 'aes',
+    name: 'Alliance of Sahel States',
+    shortName: 'AES',
+    type: 'trade_bloc',
+    color: '#ef4444',
+    members: ['ML', 'BF', 'NE'],
+    description: 'Junta-Allianz, 2023 gegründet, aus ECOWAS ausgetreten. Militär- und Wirtschaftskooperation.',
+    foundedYear: 2023,
+    source: 'https://en.wikipedia.org/wiki/Alliance_of_Sahel_States',
+    sourceLabel: 'Wikipedia – AES',
+  },
+  {
+    id: 'eac',
+    name: 'East African Community',
+    shortName: 'EAC',
+    type: 'trade_bloc',
+    color: '#3b82f6',
+    members: ['BI', 'CD', 'KE', 'RW', 'SS', 'TZ', 'UG', 'SO'],
+    description: 'Ostafrikanische Gemeinschaft, Zollunion, gemeinsamer Markt.',
+    foundedYear: 2000,
+    hqCity: 'Arusha',
+    source: 'https://en.wikipedia.org/wiki/East_African_Community',
+    sourceLabel: 'Wikipedia – EAC',
+  },
+  {
+    id: 'sadc',
+    name: 'Southern African Development Community',
+    shortName: 'SADC',
+    type: 'trade_bloc',
+    color: '#8b5cf6',
+    members: ['AO', 'BW', 'KM', 'CD', 'SZ', 'LS', 'MG', 'MW', 'MU', 'MZ', 'NA', 'SC', 'ZA', 'TZ', 'ZM', 'ZW'],
+    description: 'Südafrikanische Entwicklungsgemeinschaft, Freihandelszone.',
+    foundedYear: 1992,
+    hqCity: 'Gaborone',
+    source: 'https://en.wikipedia.org/wiki/SADC',
+    sourceLabel: 'Wikipedia – SADC',
+  },
+  {
+    id: 'cemac',
+    name: 'Central African Economic and Monetary Community',
+    shortName: 'CEMAC',
+    type: 'trade_bloc',
+    color: '#0ea5e9',
+    members: ['CM', 'CF', 'TD', 'CG', 'GQ', 'GA'],
+    description: 'Zentralafrikanische Wirtschafts- und Währungsunion, CFA-Franc.',
+    foundedYear: 1994,
+    hqCity: 'Bangui',
+    source: 'https://en.wikipedia.org/wiki/CEMAC',
+    sourceLabel: 'Wikipedia – CEMAC',
+  },
+  {
+    id: 'uemoa',
+    name: 'West African Economic and Monetary Union',
+    shortName: 'UEMOA/WAEMU',
+    type: 'trade_bloc',
+    color: '#d97706',
+    members: ['BJ', 'BF', 'CI', 'GW', 'ML', 'NE', 'SN', 'TG'],
+    description: 'Westafrikanische Währungsunion, CFA-Franc (XOF).',
+    foundedYear: 1994,
+    hqCity: 'Ouagadougou',
+    source: 'https://en.wikipedia.org/wiki/West_African_Economic_and_Monetary_Union',
+    sourceLabel: 'Wikipedia – UEMOA',
+  },
+  {
+    id: 'igad',
+    name: 'Intergovernmental Authority on Development',
+    shortName: 'IGAD',
+    type: 'trade_bloc',
+    color: '#14b8a6',
+    members: ['DJ', 'ER', 'ET', 'KE', 'SO', 'SS', 'SD', 'UG'],
+    description: 'Ostafrikanische Entwicklung & Konfliktlösung, Horn von Afrika.',
+    foundedYear: 1996,
+    hqCity: 'Djibouti',
+    source: 'https://en.wikipedia.org/wiki/IGAD',
+    sourceLabel: 'Wikipedia – IGAD',
+  },
+
+  // ═══ EXTERNE WIRTSCHAFTSPARTNER ═══
+  {
+    id: 'china-bri',
+    name: 'Belt and Road Initiative (Afrika)',
+    shortName: 'BRI/China',
+    type: 'investment',
+    color: '#dc2626',
+    members: ['KE', 'ET', 'DJ', 'NG', 'AO', 'TZ', 'ZM', 'ZW', 'MZ', 'EG', 'DZ', 'MA', 'SN', 'CM', 'CD', 'GH', 'CI', 'GA', 'CG', 'SD', 'UG', 'RW', 'MG'],
+    description: 'Chinas Infrastruktur-Investitionen: Häfen, Eisenbahnen, Straßen, Telekom. Größter bilateraler Kreditgeber Afrikas.',
+    foundedYear: 2013,
+    source: 'https://en.wikipedia.org/wiki/Belt_and_Road_Initiative',
+    sourceLabel: 'Wikipedia – BRI',
+  },
+  {
+    id: 'eu-epa',
+    name: 'EU Economic Partnership Agreements',
+    shortName: 'EU-EPA',
+    type: 'fta',
+    color: '#2563eb',
+    members: ['CM', 'CI', 'GH', 'KE', 'MU', 'MG', 'SC', 'ZW', 'MZ', 'BW', 'LS', 'NA', 'SZ', 'ZA'],
+    description: 'EU-Handelsabkommen mit afrikanischen Ländern/Regionen. Umstritten wegen Asymmetrie.',
+    foundedYear: 2008,
+    source: 'https://en.wikipedia.org/wiki/Economic_Partnership_Agreements',
+    sourceLabel: 'Wikipedia – EU-EPA',
+  },
+  {
+    id: 'agoa',
+    name: 'African Growth and Opportunity Act',
+    shortName: 'AGOA/USA',
+    type: 'fta',
+    color: '#3b82f6',
+    members: ['AO', 'BJ', 'BW', 'BF', 'CV', 'CM', 'TD', 'KM', 'CG', 'CD', 'CI', 'DJ', 'ET', 'GA', 'GM', 'GH', 'GN', 'GW', 'KE', 'LS', 'LR', 'MG', 'MW', 'ML', 'MR', 'MU', 'MZ', 'NA', 'NE', 'NG', 'RW', 'ST', 'SN', 'SC', 'SL', 'ZA', 'TZ', 'TG', 'UG', 'ZM'],
+    description: 'US-Handels-Präferenzprogramm für Sub-Sahara Afrika. Verlängerung über 2025 hinaus unklar.',
+    foundedYear: 2000,
+    source: 'https://en.wikipedia.org/wiki/African_Growth_and_Opportunity_Act',
+    sourceLabel: 'Wikipedia – AGOA',
+  },
+];
