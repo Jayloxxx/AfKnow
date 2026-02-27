@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { ToolType, Faction, Echelon, ConfidenceLevel } from './types';
 import { TOOLS, PRESET_COLORS, MILITARY_SYMBOLS, CATEGORY_LABELS, FACTION_COLORS, FACTION_LABELS, ECHELON_MARKERS, CONFIDENCE_LABELS, WEAPON_RANGES, WEAPON_RANGE_CATEGORIES } from './constants';
 import type { MilitaryCategory } from './constants';
@@ -29,6 +29,13 @@ const CATEGORY_ORDER: MilitaryCategory[] = [
   'personnel', 'vehicles', 'air-defense', 'radar', 'ships', 'aircraft', 'nato', 'infrastructure',
 ];
 
+const GROUP_META: Record<string, { label: string }> = {
+  basic: { label: 'Basis' },
+  draw: { label: 'Zeichnen' },
+  military: { label: 'Militär' },
+  measure: { label: 'Messen' },
+};
+
 export default function ToolPalette({
   activeTool, setActiveTool, activeColor, setActiveColor,
   textInput, setTextInput, fontSize, setFontSize,
@@ -41,246 +48,134 @@ export default function ToolPalette({
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showSymbolPicker, setShowSymbolPicker] = useState(false);
   const [showRangePicker, setShowRangePicker] = useState(false);
+  const [tooltipInfo, setTooltipInfo] = useState<{ label: string; key: string; rect: DOMRect } | null>(null);
+  const tooltipTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => { if (tooltipTimeout.current) clearTimeout(tooltipTimeout.current); };
+  }, []);
+
+  const handleToolHover = (label: string, key: string, e: React.MouseEvent) => {
+    if (tooltipTimeout.current) clearTimeout(tooltipTimeout.current);
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    tooltipTimeout.current = setTimeout(() => {
+      setTooltipInfo({ label, key, rect });
+    }, 350);
+  };
+
+  const handleToolLeave = () => {
+    if (tooltipTimeout.current) clearTimeout(tooltipTimeout.current);
+    setTooltipInfo(null);
+  };
 
   const groups = ['basic', 'draw', 'military', 'measure'] as const;
-  const groupLabels: Record<string, string> = { basic: 'Basis', draw: 'Zeichnen', military: 'Militär', measure: 'Messen' };
 
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2,
-      padding: '4px 10px', borderTop: '1px solid var(--ed-border)',
-      background: 'var(--ed-toolbar)', flexShrink: 0, flexWrap: 'wrap', position: 'relative',
-    }}>
-      {groups.map((group, gi) => (
-        <div key={group} style={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {gi > 0 && <div style={{ width: 1, height: 28, background: 'var(--ed-border)', margin: '0 5px' }} />}
-          <span style={{
-            fontSize: 7, color: 'var(--ed-text-dim)', fontFamily: 'var(--font-mono)',
-            textTransform: 'uppercase', letterSpacing: '0.06em', marginRight: 2,
-            writingMode: 'vertical-rl', transform: 'rotate(180deg)', lineHeight: 1,
-          }}>{groupLabels[group]}</span>
-          {TOOLS.filter((t) => t.group === group).map((t) => {
-            const Icon = t.icon;
-            const isActive = activeTool === t.id;
-            return (
-              <button key={t.id} onClick={() => setActiveTool(t.id)} title={`${t.label} (${t.key})`}
-                style={{
-                  width: 30, height: 30, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: isActive ? `1px solid color-mix(in srgb, var(--accent-hex) 50%, transparent)` : '1px solid transparent',
-                  cursor: 'pointer',
-                  background: isActive ? 'var(--ed-active)' : 'transparent',
-                  color: isActive ? 'var(--accent-hex)' : 'var(--ed-icon)',
-                  transition: 'all 0.12s',
-                  position: 'relative',
-                }}>
-                <Icon size={14} />
-              </button>
-            );
-          })}
-        </div>
-      ))}
+    <div className="ed-tool-sidebar">
+      {/* Tool Groups */}
+      <div className="ed-tool-groups">
+        {groups.map((group) => {
+          const tools = TOOLS.filter((t) => t.group === group);
+          const meta = GROUP_META[group];
 
-      <div style={{ width: 1, height: 24, background: 'var(--ed-border)', margin: '0 6px' }} />
-
-      {/* Contextual options */}
-      {(activeTool === 'text' || activeTool === 'callout') && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <input value={textInput} onChange={(e) => setTextInput(e.target.value)} placeholder="Text eingeben..."
-            style={{ width: 130, padding: '4px 8px', borderRadius: 6, background: 'var(--ed-input)', border: '1px solid var(--ed-input-border)', color: 'var(--ed-text)', fontSize: 11, outline: 'none' }}
-            onKeyDown={(e) => e.key === 'Enter' && e.stopPropagation()} />
-          <input type="range" min={8} max={72} value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))}
-            style={{ width: 60, accentColor: 'var(--accent-hex)' }} />
-          <span style={{ fontSize: 10, color: 'var(--ed-text-muted)', fontFamily: 'monospace', minWidth: 20 }}>{fontSize}</span>
-        </div>
-      )}
-
-      {/* Military Unit: Symbol Picker + Faction + Echelon + Confidence */}
-      {activeTool === 'military-unit' && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-          {/* Symbol Picker */}
-          <div style={{ position: 'relative' }}>
-            <button onClick={() => setShowSymbolPicker(!showSymbolPicker)}
-              style={{
-                padding: '4px 8px', borderRadius: 6, background: 'var(--ed-input)',
-                border: '1px solid var(--ed-input-border)', color: 'var(--ed-text-secondary)',
-                fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-              }}>
-              <MilitarySymbolPreview symbolId={militarySymbol} size={14} color="var(--ed-icon)" />
-              {MILITARY_SYMBOLS.find((s) => s.id === militarySymbol)?.label || 'Einheit'}
-            </button>
-
-            {showSymbolPicker && (<>
-              <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setShowSymbolPicker(false)} />
-              <div style={{
-                position: 'absolute', bottom: 36, left: '50%', transform: 'translateX(-50%)',
-                background: 'var(--ed-panel)', border: '1px solid var(--ed-border-strong)',
-                borderRadius: 12, padding: 8, zIndex: 50,
-                width: 320, maxHeight: 420, overflowY: 'auto',
-                display: 'flex', flexDirection: 'column', gap: 2,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-              }}>
-                {CATEGORY_ORDER.map((cat) => {
-                  const symbols = MILITARY_SYMBOLS.filter((s) => s.category === cat);
-                  if (symbols.length === 0) return null;
+          return (
+            <div key={group} className="ed-tool-group">
+              <div className="ed-tool-group-header">
+                <span className="ed-tool-group-label">{meta.label}</span>
+              </div>
+              <div className="ed-tool-group-items">
+                {tools.map((t) => {
+                  const Icon = t.icon;
+                  const isActive = activeTool === t.id;
                   return (
-                    <div key={cat}>
-                      <div style={{
-                        fontSize: 9, color: 'var(--ed-text-dim)', padding: '6px 8px 3px',
-                        fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
-                        fontFamily: 'var(--font-display)',
-                      }}>
-                        {CATEGORY_LABELS[cat]}
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-                        {symbols.map((s) => {
-                          const isSel = militarySymbol === s.id;
-                          return (
-                            <button key={s.id}
-                              onClick={() => { setMilitarySymbol(s.id); setShowSymbolPicker(false); }}
-                              style={{
-                                padding: '4px 6px', borderRadius: 5, border: 'none', cursor: 'pointer',
-                                textAlign: 'left', display: 'flex', alignItems: 'center', gap: 6,
-                                background: isSel ? 'var(--ed-active)' : 'transparent',
-                                color: isSel ? 'var(--accent-hex)' : 'var(--ed-text-secondary)',
-                                fontSize: 10, whiteSpace: 'nowrap', overflow: 'hidden',
-                                transition: 'background 0.1s',
-                              }}>
-                              <MilitarySymbolPreview
-                                symbolId={s.id}
-                                size={20}
-                                color={isSel ? 'var(--accent-hex)' : 'var(--ed-icon)'}
-                              />
-                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <button
+                      key={t.id}
+                      onClick={() => setActiveTool(t.id)}
+                      onMouseEnter={(e) => handleToolHover(t.label, t.key, e)}
+                      onMouseLeave={handleToolLeave}
+                      className={`ed-tool-btn${isActive ? ' active' : ''}`}
+                    >
+                      <Icon size={16} />
+                      {isActive && <div className="ed-tool-active-dot" />}
+                    </button>
                   );
                 })}
               </div>
-            </>)}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Divider */}
+      <div className="ed-tool-divider" />
+
+      {/* Color Picker */}
+      <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', padding: '4px 0' }}>
+        <button onClick={() => setShowColorPicker(!showColorPicker)} className="ed-color-trigger" title="Farbe wählen">
+          <div className="ed-color-dot" style={{ backgroundColor: activeColor, boxShadow: `0 0 8px ${activeColor}40` }} />
+        </button>
+        {showColorPicker && (<>
+          <div className="ed-overlay-dismiss" onClick={() => setShowColorPicker(false)} />
+          <div className="ed-flyout ed-flyout-right" style={{ top: 0 }}>
+            <div className="ed-flyout-header">Farbe wählen</div>
+            <div className="ed-color-grid">
+              {PRESET_COLORS.map((clr) => (
+                <button key={clr} onClick={() => { setActiveColor(clr); setShowColorPicker(false); }}
+                  className={`ed-color-swatch${activeColor === clr ? ' active' : ''}`}
+                  style={{ backgroundColor: clr }} />
+              ))}
+            </div>
+            <input type="color" value={activeColor} onChange={(e) => setActiveColor(e.target.value)}
+              className="ed-color-native" />
           </div>
+        </>)}
+      </div>
 
-          <div style={{ width: 1, height: 20, background: 'var(--ed-border)' }} />
+      {/* ─── Context Panels ─── */}
 
-          {/* Faction Selector */}
-          <div style={{ display: 'flex', gap: 2 }}>
-            {(Object.keys(FACTION_COLORS) as Faction[]).map(f => (
-              <button key={f} onClick={() => setActiveFaction(f)} title={FACTION_LABELS[f]}
-                style={{
-                  width: 24, height: 24, borderRadius: 4, border: 'none', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: activeFaction === f ? `${FACTION_COLORS[f]}30` : 'transparent',
-                  outline: activeFaction === f ? `2px solid ${FACTION_COLORS[f]}` : 'none',
-                  outlineOffset: -1,
-                }}>
-                <div style={{
-                  width: 10, height: 10,
-                  borderRadius: f === 'hostile' ? 0 : f === 'unknown' ? '50%' : 2,
-                  transform: f === 'hostile' ? 'rotate(45deg) scale(0.75)' : undefined,
-                  backgroundColor: FACTION_COLORS[f],
-                }} />
-              </button>
-            ))}
-          </div>
-
-          <div style={{ width: 1, height: 20, background: 'var(--ed-border)' }} />
-
-          {/* Echelon Selector */}
-          <select value={activeEchelon}
-            onChange={(e) => setActiveEchelon(e.target.value as Echelon)}
-            style={{
-              background: 'var(--ed-input)', border: '1px solid var(--ed-input-border)',
-              borderRadius: 4, padding: '2px 4px', color: 'var(--ed-text-muted)',
-              fontSize: 9, outline: 'none', cursor: 'pointer',
-            }}>
-            {Object.entries(ECHELON_MARKERS).map(([id, m]) => (
-              <option key={id} value={id}>{m.symbol} {m.label}</option>
-            ))}
-          </select>
-
-          {/* Confidence Selector */}
-          <select value={activeConfidence}
-            onChange={(e) => setActiveConfidence(e.target.value as ConfidenceLevel)}
-            style={{
-              background: 'var(--ed-input)', border: '1px solid var(--ed-input-border)',
-              borderRadius: 4, padding: '2px 4px', color: 'var(--ed-text-muted)',
-              fontSize: 9, outline: 'none', cursor: 'pointer',
-            }}>
-            {Object.entries(CONFIDENCE_LABELS).map(([id, c]) => (
-              <option key={id} value={id}>{c.label}</option>
-            ))}
-          </select>
+      {/* Text Input */}
+      {(activeTool === 'text' || activeTool === 'callout') && (
+        <div className="ed-ctx-panel">
+          <div className="ed-ctx-label">Text</div>
+          <input value={textInput} onChange={(e) => setTextInput(e.target.value)}
+            placeholder="Text eingeben..."
+            className="ed-ctx-input"
+            onKeyDown={(e) => e.key === 'Enter' && e.stopPropagation()} />
+          <div className="ed-ctx-label" style={{ marginTop: 6 }}>Größe: {fontSize}px</div>
+          <input type="range" min={8} max={72} value={fontSize}
+            onChange={(e) => setFontSize(Number(e.target.value))}
+            className="ed-ctx-slider" />
         </div>
       )}
 
-      {/* Weapon Range Picker */}
-      {activeTool === 'range-circle' && (
-        <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowRangePicker(!showRangePicker)}
-            style={{
-              padding: '4px 10px', borderRadius: 6, background: 'var(--ed-input)',
-              border: '1px solid var(--ed-input-border)', color: 'var(--ed-text-secondary)',
-              fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-            }}>
-            <div style={{
-              width: 10, height: 10, borderRadius: '50%', border: `2px solid ${WEAPON_RANGES.find(w => w.id === activeWeaponRange)?.color || '#888'}`,
-              background: 'transparent',
-            }} />
-            {WEAPON_RANGES.find(w => w.id === activeWeaponRange)?.label || 'Waffensystem'}
-            <span style={{ fontSize: 8, color: 'var(--ed-text-dim)', fontFamily: 'var(--font-mono)' }}>
-              {WEAPON_RANGES.find(w => w.id === activeWeaponRange)?.rangeKm || '?'} km
+      {/* Military Unit Config */}
+      {activeTool === 'military-unit' && (
+        <div className="ed-ctx-panel">
+          <div className="ed-ctx-label">Einheit</div>
+          <button onClick={() => setShowSymbolPicker(!showSymbolPicker)} className="ed-ctx-select-btn">
+            <MilitarySymbolPreview symbolId={militarySymbol} size={14} color="var(--ed-icon)" />
+            <span className="ed-ctx-select-text">
+              {MILITARY_SYMBOLS.find((s) => s.id === militarySymbol)?.label || 'Einheit'}
             </span>
           </button>
-
-          {showRangePicker && (<>
-            <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setShowRangePicker(false)} />
-            <div style={{
-              position: 'absolute', bottom: 36, left: '50%', transform: 'translateX(-50%)',
-              background: 'var(--ed-panel)', border: '1px solid var(--ed-border-strong)',
-              borderRadius: 12, padding: 8, zIndex: 50,
-              width: 300, maxHeight: 400, overflowY: 'auto',
-              display: 'flex', flexDirection: 'column', gap: 2,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-            }}>
-              {Object.entries(WEAPON_RANGE_CATEGORIES).map(([cat, label]) => {
-                const weapons = WEAPON_RANGES.filter(w => w.category === cat);
-                if (weapons.length === 0) return null;
+          {showSymbolPicker && (<>
+            <div className="ed-overlay-dismiss" onClick={() => setShowSymbolPicker(false)} />
+            <div className="ed-flyout ed-flyout-right" style={{ top: 0 }}>
+              {CATEGORY_ORDER.map((cat) => {
+                const symbols = MILITARY_SYMBOLS.filter((s) => s.category === cat);
+                if (symbols.length === 0) return null;
                 return (
                   <div key={cat}>
-                    <div style={{
-                      fontSize: 9, color: 'var(--ed-text-dim)', padding: '6px 8px 3px',
-                      fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
-                      fontFamily: 'var(--font-display)',
-                    }}>
-                      {label}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {weapons.map(w => {
-                        const isSel = activeWeaponRange === w.id;
+                    <div className="ed-flyout-cat">{CATEGORY_LABELS[cat]}</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+                      {symbols.map((s) => {
+                        const isSel = militarySymbol === s.id;
                         return (
-                          <button key={w.id}
-                            onClick={() => { setActiveWeaponRange(w.id); setShowRangePicker(false); }}
-                            style={{
-                              padding: '4px 8px', borderRadius: 5, border: 'none', cursor: 'pointer',
-                              textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8,
-                              background: isSel ? 'var(--ed-active)' : 'transparent',
-                              color: isSel ? w.color : 'var(--ed-text-secondary)',
-                              fontSize: 10,
-                              transition: 'background 0.1s',
-                            }}>
-                            <div style={{
-                              width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
-                              border: `2px solid ${w.color}`, background: `${w.color}15`,
-                            }} />
-                            <span style={{ flex: 1 }}>{w.label}</span>
-                            <span style={{
-                              fontSize: 9, fontFamily: 'var(--font-mono)',
-                              color: isSel ? w.color : 'var(--ed-text-dim)',
-                            }}>
-                              {w.rangeKm} km
-                            </span>
+                          <button key={s.id}
+                            onClick={() => { setMilitarySymbol(s.id); setShowSymbolPicker(false); }}
+                            className={`ed-flyout-item${isSel ? ' active' : ''}`}>
+                            <MilitarySymbolPreview symbolId={s.id} size={18} color={isSel ? 'var(--accent-hex)' : 'var(--ed-icon)'} />
+                            <span className="ed-flyout-item-label">{s.label}</span>
                           </button>
                         );
                       })}
@@ -290,35 +185,100 @@ export default function ToolPalette({
               })}
             </div>
           </>)}
+
+          <div className="ed-ctx-label" style={{ marginTop: 8 }}>Fraktion</div>
+          <div className="ed-faction-row">
+            {(Object.keys(FACTION_COLORS) as Faction[]).map(f => (
+              <button key={f} onClick={() => setActiveFaction(f)} title={FACTION_LABELS[f]}
+                className={`ed-faction-btn${activeFaction === f ? ' active' : ''}`}>
+                <div className="ed-faction-shape" style={{
+                  borderRadius: f === 'hostile' ? 0 : f === 'unknown' ? '50%' : 3,
+                  transform: f === 'hostile' ? 'rotate(45deg) scale(0.75)' : undefined,
+                  backgroundColor: FACTION_COLORS[f],
+                  outline: activeFaction === f ? `2px solid ${FACTION_COLORS[f]}` : 'none',
+                  outlineOffset: 2,
+                }} />
+              </button>
+            ))}
+          </div>
+
+          <div className="ed-ctx-label" style={{ marginTop: 6 }}>Stufe</div>
+          <select value={activeEchelon} onChange={(e) => setActiveEchelon(e.target.value as Echelon)}
+            className="ed-ctx-select">
+            {Object.entries(ECHELON_MARKERS).map(([id, m]) => (
+              <option key={id} value={id}>{m.symbol} {m.label}</option>
+            ))}
+          </select>
+
+          <div className="ed-ctx-label" style={{ marginTop: 4 }}>Sicherheit</div>
+          <select value={activeConfidence} onChange={(e) => setActiveConfidence(e.target.value as ConfidenceLevel)}
+            className="ed-ctx-select">
+            {Object.entries(CONFIDENCE_LABELS).map(([id, c]) => (
+              <option key={id} value={id}>{c.label}</option>
+            ))}
+          </select>
         </div>
       )}
 
-      {/* Color picker */}
-      <button onClick={() => setShowColorPicker(!showColorPicker)} title="Farbe"
-        style={{ width: 32, height: 32, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', background: 'transparent' }}>
-        <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid var(--ed-icon-dim)', backgroundColor: activeColor }} />
-      </button>
-
-      {showColorPicker && (<>
-        <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setShowColorPicker(false)} />
-        <div style={{
-          position: 'absolute', bottom: 46, right: 10, background: 'var(--ed-panel)',
-          border: '1px solid var(--ed-border-strong)', borderRadius: 12, padding: 12, zIndex: 50,
-          display: 'flex', flexWrap: 'wrap', gap: 6, width: 200,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-        }}>
-          {PRESET_COLORS.map((clr) => (
-            <button key={clr} onClick={() => { setActiveColor(clr); setShowColorPicker(false); }}
-              style={{
-                width: 26, height: 26, borderRadius: 4, cursor: 'pointer',
-                border: activeColor === clr ? '2px solid var(--ed-text)' : '2px solid transparent',
-                backgroundColor: clr,
-              }} />
-          ))}
-          <input type="color" value={activeColor} onChange={(e) => setActiveColor(e.target.value)}
-            style={{ width: '100%', height: 28, cursor: 'pointer', borderRadius: 4 }} />
+      {/* Weapon Range Picker */}
+      {activeTool === 'range-circle' && (
+        <div className="ed-ctx-panel">
+          <div className="ed-ctx-label">Waffensystem</div>
+          <button onClick={() => setShowRangePicker(!showRangePicker)} className="ed-ctx-select-btn">
+            <div style={{
+              width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+              border: `2px solid ${WEAPON_RANGES.find(w => w.id === activeWeaponRange)?.color || '#888'}`,
+            }} />
+            <span className="ed-ctx-select-text">
+              {WEAPON_RANGES.find(w => w.id === activeWeaponRange)?.label || 'System'}
+            </span>
+            <span className="ed-range-km">
+              {WEAPON_RANGES.find(w => w.id === activeWeaponRange)?.rangeKm || '?'} km
+            </span>
+          </button>
+          {showRangePicker && (<>
+            <div className="ed-overlay-dismiss" onClick={() => setShowRangePicker(false)} />
+            <div className="ed-flyout ed-flyout-right" style={{ top: 0 }}>
+              {Object.entries(WEAPON_RANGE_CATEGORIES).map(([cat, label]) => {
+                const weapons = WEAPON_RANGES.filter(w => w.category === cat);
+                if (weapons.length === 0) return null;
+                return (
+                  <div key={cat}>
+                    <div className="ed-flyout-cat">{label}</div>
+                    {weapons.map(w => {
+                      const isSel = activeWeaponRange === w.id;
+                      return (
+                        <button key={w.id}
+                          onClick={() => { setActiveWeaponRange(w.id); setShowRangePicker(false); }}
+                          className={`ed-flyout-item${isSel ? ' active' : ''}`}
+                          style={{ color: isSel ? w.color : undefined }}>
+                          <div style={{
+                            width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+                            border: `2px solid ${w.color}`, background: `${w.color}15`,
+                          }} />
+                          <span style={{ flex: 1 }}>{w.label}</span>
+                          <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', opacity: 0.6 }}>{w.rangeKm} km</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </>)}
         </div>
-      </>)}
+      )}
+
+      {/* Tooltip */}
+      {tooltipInfo && (
+        <div className="ed-tool-tooltip" style={{
+          top: tooltipInfo.rect.top + tooltipInfo.rect.height / 2 - 14,
+          left: tooltipInfo.rect.right + 10,
+        }}>
+          <span className="ed-tooltip-name">{tooltipInfo.label}</span>
+          <kbd className="ed-tooltip-kbd">{tooltipInfo.key}</kbd>
+        </div>
+      )}
     </div>
   );
 }

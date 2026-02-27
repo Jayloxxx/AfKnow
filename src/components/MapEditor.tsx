@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { Save, Download, ChevronLeft, ChevronRight, Undo2, Redo2, HelpCircle, Plus, X, Check, AlertTriangle, Crosshair, Layers, ChevronDown, Upload, FileJson, CloudSun, Navigation, Share2, HardDrive, Maximize, Search, Magnet } from 'lucide-react';
+import { Save, Download, ChevronLeft, ChevronRight, Undo2, Redo2, HelpCircle, Plus, X, Check, AlertTriangle, Crosshair, Layers, ChevronDown, Upload, FileJson, CloudSun, Navigation, Share2, HardDrive, Maximize, Search, Magnet, ZoomIn, ZoomOut, MousePointer } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useRegion } from '../context/RegionContext';
 import { useEditorState } from './editor/useEditorState';
@@ -478,39 +478,50 @@ export default function MapEditor() {
         {selectorOpen ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
       </button>
 
+      {/* ═══ Tool Sidebar (vertical, between selector and canvas) ═══ */}
+      <ToolPalette
+        activeTool={activeTool} setActiveTool={setActiveTool}
+        activeColor={activeColor} setActiveColor={setActiveColor}
+        textInput={textInput} setTextInput={setTextInput}
+        fontSize={fontSize} setFontSize={setFontSize}
+        militarySymbol={militarySymbol} setMilitarySymbol={setMilitarySymbol}
+        activeFaction={activeFaction} setActiveFaction={setActiveFaction}
+        activeEchelon={activeEchelon} setActiveEchelon={setActiveEchelon}
+        activeConfidence={activeConfidence} setActiveConfidence={setActiveConfidence}
+        activeWeaponRange={activeWeaponRange} setActiveWeaponRange={setActiveWeaponRange}
+      />
+
       {/* ═══ Center: Canvas + Toolbars ═══ */}
       <div style={{ display: 'flex', flexDirection: 'column', flex: '1 1 0%', minWidth: 0, minHeight: 0, background: 'var(--ed-bg)' }}>
         {/* Top Toolbar */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '5px 10px', borderBottom: '1px solid var(--ed-border)',
-          background: 'var(--ed-toolbar)', flexShrink: 0, gap: 8,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden', flex: 1, minWidth: 0 }}>
+        <div className="ed-top-toolbar">
+          {/* Left group: map name, undo/redo, fit, command palette */}
+          <div className="ed-toolbar-group">
             <input value={mapName} onChange={(e) => setMapName(e.target.value)}
-              style={{ background: 'var(--ed-input)', border: '1px solid var(--ed-input-border)', borderRadius: 6, padding: '4px 10px', color: 'var(--ed-text)', fontSize: 12, fontFamily: 'var(--font-display)', fontWeight: 500, outline: 'none', width: 120, flexShrink: 0 }} />
+              className="ed-map-name-input"
+              placeholder="Kartenname..." />
+            <div className="ed-toolbar-sep" />
             <button onClick={state.undo} disabled={!state.canUndo} title="Rückgängig (Ctrl+Z)"
               style={{ ...iconBtnStyle, opacity: state.canUndo ? 1 : 0.25 }}><Undo2 size={14} /></button>
             <button onClick={state.redo} disabled={!state.canRedo} title="Wiederholen (Ctrl+Y)"
               style={{ ...iconBtnStyle, opacity: state.canRedo ? 1 : 0.25 }}><Redo2 size={14} /></button>
-            <button onClick={fitCanvasToContent} title="Einpassen (Inhalt optimal einrahmen)"
-              style={{ ...iconBtnStyle }}><Maximize size={14} /></button>
+            <button onClick={fitCanvasToContent} title="Einpassen (F)"
+              style={iconBtnStyle}><Maximize size={14} /></button>
+            <div className="ed-toolbar-sep" />
             <button
               onClick={() => setShowCommandPalette(true)}
               title="Schnellbefehle (Ctrl/Cmd+K)"
-              style={{
-                ...iconBtnStyle, width: 'auto', padding: '4px 9px', gap: 5,
-                color: showCommandPalette ? 'var(--accent-hex)' : 'var(--ed-icon)',
-                background: showCommandPalette ? 'var(--ed-active)' : 'var(--ed-btn)',
-              }}>
+              className="ed-cmd-btn">
               <Search size={12} />
-              <span style={{ fontSize: 10 }}>Befehle</span>
-              <span style={{ fontSize: 9, color: 'var(--ed-text-dim)', fontFamily: 'var(--font-mono)' }}>Ctrl+K</span>
+              <span>Befehle</span>
+              <kbd>Ctrl+K</kbd>
             </button>
-            <div style={{ width: 1, height: 18, background: 'var(--ed-border-strong)', flexShrink: 0 }} />
-            {/* Map style */}
+          </div>
+
+          {/* Center group: map style, grid, coord, snap, layers */}
+          <div className="ed-toolbar-group">
             <select value={mapStyle} onChange={(e) => setMapStyle(e.target.value as MapStyle)} title="Kartenstil"
-              style={{ background: 'var(--ed-input)', border: '1px solid var(--ed-input-border)', borderRadius: 4, padding: '2px 6px', color: 'var(--ed-text-muted)', fontSize: 10, outline: 'none', cursor: 'pointer', flexShrink: 0 }}>
+              className="ed-toolbar-select">
               {(Object.keys(STYLE_CATEGORY_LABELS) as StyleCategory[]).map(cat => {
                 const group = MAP_STYLES.filter(s => s.category === cat);
                 if (group.length === 0) return null;
@@ -522,38 +533,30 @@ export default function MapEditor() {
               })}
             </select>
             <select value={gridOverlay} onChange={(e) => setGridOverlay(e.target.value)} title="Raster-Overlay"
-              style={{ background: 'var(--ed-input)', border: '1px solid var(--ed-input-border)', borderRadius: 4, padding: '2px 6px', color: 'var(--ed-text-muted)', fontSize: 10, outline: 'none', cursor: 'pointer', flexShrink: 0 }}>
+              className="ed-toolbar-select">
               {GRID_OVERLAYS.map((g) => <option key={g.id} value={g.id}>{g.label}</option>)}
             </select>
             <select value={coordFormat} onChange={(e) => setCoordFormat(e.target.value as import('../lib/geoMeasure').CoordFormat)} title="Koordinatenformat"
-              style={{ background: 'var(--ed-input)', border: '1px solid var(--ed-input-border)', borderRadius: 4, padding: '2px 6px', color: 'var(--ed-text-muted)', fontSize: 10, outline: 'none', cursor: 'pointer', flexShrink: 0 }}>
+              className="ed-toolbar-select">
               <option value="dd">DD</option>
               <option value="dms">DMS</option>
               <option value="utm">UTM</option>
               <option value="mgrs">MGRS</option>
             </select>
             <button onClick={() => setSnapToGrid(v => !v)}
-              style={{
-                ...iconBtnStyle, width: 'auto', padding: '4px 8px', gap: 4, fontSize: 10,
-                background: snapToGrid ? 'var(--ed-active)' : 'var(--ed-btn)',
-                color: snapToGrid ? 'var(--accent-hex)' : 'var(--ed-icon)',
-              }}
+              className={`ed-toggle-btn${snapToGrid ? ' active' : ''}`}
               title={snapToGrid ? 'Raster-Snapping aktiv (Shift+S)' : 'Raster-Snapping inaktiv (Shift+S)'}>
               <Magnet size={12} />
-              <span style={{ fontSize: 9 }}>Snap</span>
+              <span>Snap</span>
             </button>
-            <div style={{ width: 1, height: 18, background: 'var(--ed-border-strong)', flexShrink: 0 }} />
+            <div className="ed-toolbar-sep" />
             {/* Layer dropdown */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <button onClick={() => setShowLayerDropdown(!showLayerDropdown)}
-                style={{
-                  ...iconBtnStyle, width: 'auto', padding: '4px 8px', gap: 4, fontSize: 10,
-                  background: showLayerDropdown ? 'var(--ed-active)' : 'var(--ed-btn)',
-                  color: showLayerDropdown ? 'var(--accent-hex)' : 'var(--ed-icon)',
-                }}
+                className={`ed-toggle-btn${showLayerDropdown ? ' active' : ''}`}
                 title="Kartenebenen">
                 <Layers size={12} />
-                <span style={{ fontSize: 9 }}>Ebenen</span>
+                <span>Ebenen</span>
                 <ChevronDown size={10} style={{ opacity: 0.5 }} />
               </button>
               {showLayerDropdown && (<>
@@ -609,14 +612,10 @@ export default function MapEditor() {
             {/* Weather overlay toggle */}
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <button onClick={() => setShowWeatherPanel(!showWeatherPanel)}
-                style={{
-                  ...iconBtnStyle, width: 'auto', padding: '4px 8px', gap: 4, fontSize: 10,
-                  background: showWeatherPanel ? 'var(--ed-active)' : weatherLayers.length > 0 ? 'color-mix(in srgb, #3b82f6 15%, var(--ed-btn))' : 'var(--ed-btn)',
-                  color: showWeatherPanel ? 'var(--accent-hex)' : weatherLayers.length > 0 ? '#3b82f6' : 'var(--ed-icon)',
-                }}
+                className={`ed-toggle-btn${showWeatherPanel ? ' active' : ''}${weatherLayers.length > 0 && !showWeatherPanel ? ' has-data' : ''}`}
                 title="Wetter-Overlay">
                 <CloudSun size={12} />
-                <span style={{ fontSize: 9 }}>Wetter</span>
+                <span>Wetter</span>
               </button>
               {showWeatherPanel && (<>
                 <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setShowWeatherPanel(false)} />
@@ -635,60 +634,41 @@ export default function MapEditor() {
             </div>
             {showLegend && (
               <input value={legendTitle} onChange={(e) => setLegendTitle(e.target.value)} placeholder="Legendentitel"
-                style={{ background: 'var(--ed-input)', border: '1px solid var(--ed-input-border)', borderRadius: 4, padding: '2px 8px', color: 'var(--ed-text)', fontSize: 10, outline: 'none', width: 80, flexShrink: 0 }} />
+                className="ed-toolbar-input-sm" />
             )}
             {showTitle && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
                 <input value={mapTitle} onChange={(e) => setMapTitle(e.target.value)} placeholder="Kartentitel..."
-                  style={{ background: 'var(--ed-input)', border: '1px solid var(--ed-input-border)', borderRadius: 4, padding: '2px 8px', color: 'var(--ed-text)', fontSize: 10, outline: 'none', width: 140 }} />
+                  className="ed-toolbar-input-sm" style={{ width: 140 }} />
                 <input type="color" value={titleColor} onChange={(e) => setTitleColor(e.target.value)}
                   style={{ width: 20, height: 20, cursor: 'pointer', border: 'none', padding: 0, borderRadius: 3 }} />
               </div>
             )}
-            <span style={{
-              fontSize: 9, color: 'var(--ed-text-muted)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap',
-              border: '1px solid var(--ed-border)', borderRadius: 999, padding: '2px 8px', background: 'var(--ed-btn)',
-              marginLeft: 'auto',
-            }}>
-              {activeToolDef?.label || 'Tool'}
-            </span>
-            <span style={{
-              fontSize: 9, color: 'var(--ed-text-muted)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap',
-              border: '1px solid var(--ed-border)', borderRadius: 999, padding: '2px 8px', background: 'var(--ed-btn)',
-            }}>
-              {selectionSummary}
-            </span>
-            <span style={{ fontSize: 8, color: 'var(--ed-text-dim)', fontFamily: 'monospace', whiteSpace: 'nowrap', flexShrink: 0 }}>
-              {state.countries.length}L · {state.elements.length}E
-            </span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+
+          {/* Right group: actions & panels */}
+          <div className="ed-toolbar-group">
             <button onClick={() => setShowISWPanel(!showISWPanel)}
-              style={{
-                ...iconBtnStyle,
-                background: showISWPanel ? 'linear-gradient(135deg, rgba(220,38,38,0.2), rgba(37,99,235,0.2))' : 'var(--ed-btn)',
-                color: showISWPanel ? '#DC2626' : 'var(--ed-icon)',
-                border: showISWPanel ? '1px solid rgba(220,38,38,0.3)' : 'none',
-                width: 'auto', padding: '4px 8px', gap: 4, fontSize: 10, fontWeight: 600,
-                fontFamily: 'var(--font-display)',
-              }}
+              className={`ed-isw-btn${showISWPanel ? ' active' : ''}`}
               title="Lage-Werkzeuge">
               <Crosshair size={12} />
-              <span style={{ fontSize: 9 }}>Lage</span>
+              <span>Lage</span>
             </button>
             <button onClick={() => setShowHelp(!showHelp)} style={{ ...iconBtnStyle, color: showHelp ? 'var(--accent-hex)' : 'var(--ed-icon)' }} title="Hilfe & Tastenkürzel"><HelpCircle size={14} /></button>
             <button onClick={() => setShowRoutePanel(!showRoutePanel)}
-              style={{ ...iconBtnStyle, color: showRoutePanel ? 'var(--accent-hex)' : 'var(--ed-icon)', background: showRoutePanel ? 'var(--ed-active)' : 'var(--ed-btn)' }}
+              className={`ed-icon-btn${showRoutePanel ? ' active' : ''}`}
               title="Routenplanung"><Navigation size={12} /></button>
             <button onClick={() => setShowPredownload(true)} style={iconBtnStyle} title="Offline-Karten"><HardDrive size={12} /></button>
             <button onClick={() => { setCollabEnabled(true); setShowShareDialog(true); }}
               style={{ ...iconBtnStyle, color: collab.connected ? '#22c55e' : 'var(--ed-icon)' }}
               title="Teilen & Zusammenarbeit"><Share2 size={12} /></button>
+            <div className="ed-toolbar-sep" />
             <button onClick={() => setShowGeoJSONDialog('import')} style={iconBtnStyle} title="GeoJSON importieren"><Upload size={12} /></button>
             <button onClick={() => setShowGeoJSONDialog('export')} style={iconBtnStyle} title="GeoJSON exportieren"><FileJson size={12} /></button>
-            <button onClick={() => setShowTemplateGallery(true)} style={exportBtnStyle} title="Kartenvorlage laden"><Layers size={11} /> Vorlage</button>
-            <button onClick={() => setShowSaveConfirm(true)} style={goldBtnStyle}><Save size={12} /> Speichern</button>
-            <button onClick={() => { setExportFormat('png'); setShowExportPreview(true); }} style={exportBtnStyle}><Download size={11} /> Export</button>
+            <button onClick={() => setShowTemplateGallery(true)} className="ed-action-btn" title="Kartenvorlage laden"><Layers size={11} /> Vorlage</button>
+            <div className="ed-toolbar-sep" />
+            <button onClick={() => setShowSaveConfirm(true)} className="ed-save-btn"><Save size={12} /> Speichern</button>
+            <button onClick={() => { setExportFormat('png'); setShowExportPreview(true); }} className="ed-action-btn"><Download size={11} /> Export</button>
           </div>
         </div>
 
@@ -790,18 +770,26 @@ export default function MapEditor() {
           svgRef={transform.svgRef}
         />
 
-        {/* Bottom Tool Palette */}
-        <ToolPalette
-          activeTool={activeTool} setActiveTool={setActiveTool}
-          activeColor={activeColor} setActiveColor={setActiveColor}
-          textInput={textInput} setTextInput={setTextInput}
-          fontSize={fontSize} setFontSize={setFontSize}
-          militarySymbol={militarySymbol} setMilitarySymbol={setMilitarySymbol}
-          activeFaction={activeFaction} setActiveFaction={setActiveFaction}
-          activeEchelon={activeEchelon} setActiveEchelon={setActiveEchelon}
-          activeConfidence={activeConfidence} setActiveConfidence={setActiveConfidence}
-          activeWeaponRange={activeWeaponRange} setActiveWeaponRange={setActiveWeaponRange}
-        />
+        {/* ═══ Professional Status Bar ═══ */}
+        <div className="ed-status-bar">
+          <div className="ed-status-left">
+            <MousePointer size={11} />
+            <span className="ed-status-tool">{activeToolDef?.label || 'Auswahl'}</span>
+            <div className="ed-status-sep" />
+            <span className="ed-status-info">{selectionSummary}</span>
+          </div>
+          <div className="ed-status-center">
+            <span className="ed-status-count">{state.countries.length} Länder</span>
+            <span className="ed-status-dot" />
+            <span className="ed-status-count">{state.elements.length} Elemente</span>
+          </div>
+          <div className="ed-status-right">
+            <button onClick={transform.zoomOut} className="ed-status-zoom-btn" title="Herauszoomen"><ZoomOut size={12} /></button>
+            <span className="ed-status-zoom">{Math.round(transform.zoom * 100)}%</span>
+            <button onClick={transform.zoomIn} className="ed-status-zoom-btn" title="Hineinzoomen"><ZoomIn size={12} /></button>
+            <button onClick={transform.resetView} className="ed-status-zoom-btn" title="Ansicht zurücksetzen" style={{ marginLeft: 2 }}>1:1</button>
+          </div>
+        </div>
       </div>
 
       {/* ═══ Right: Properties / Layer / ISW Panel ═══ */}
@@ -1328,14 +1316,4 @@ const iconBtnStyle: React.CSSProperties = {
   width: 28, height: 28, borderRadius: 6, border: 'none', cursor: 'pointer',
   background: 'var(--ed-btn)', color: 'var(--ed-icon)',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-};
-const goldBtnStyle: React.CSSProperties = {
-  background: 'color-mix(in srgb, var(--accent-hex) 15%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-hex) 30%, transparent)',
-  borderRadius: 6, padding: '4px 10px', color: 'var(--accent-hex)', fontSize: 11,
-  fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-};
-const exportBtnStyle: React.CSSProperties = {
-  background: 'var(--ed-btn)', border: '1px solid var(--ed-input-border)',
-  borderRadius: 6, padding: '4px 10px', color: 'var(--ed-text-muted)', fontSize: 11,
-  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
 };
