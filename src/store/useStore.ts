@@ -8,8 +8,8 @@ interface AppState {
   toggleTheme: () => void;
 
   // Active tab
-  activeTab: 'explorer' | 'editor' | 'my-maps' | 'live-intel' | 'op-lage' | 'takt-lage' | 'intel-mosaic' | 'osint-lage' | 'mil-vergleich' | 'knowledge';
-  setActiveTab: (tab: 'explorer' | 'editor' | 'my-maps' | 'live-intel' | 'op-lage' | 'takt-lage' | 'intel-mosaic' | 'osint-lage' | 'mil-vergleich' | 'knowledge') => void;
+  activeTab: 'explorer' | 'editor' | 'my-maps' | 'live-intel' | 'op-lage' | 'takt-lage' | 'intel-mosaic' | 'osint-lage' | 'mil-vergleich' | 'knowledge' | 'lage';
+  setActiveTab: (tab: 'explorer' | 'editor' | 'my-maps' | 'live-intel' | 'op-lage' | 'takt-lage' | 'intel-mosaic' | 'osint-lage' | 'mil-vergleich' | 'knowledge' | 'lage') => void;
 
   // Live Intel settings
   intelUpdateInterval: number; // minutes

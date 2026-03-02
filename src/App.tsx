@@ -13,6 +13,7 @@ import IntelDashboard from './components/intel/IntelDashboard';
 import OsintLagePlattform from './components/OsintLagePlattform';
 import MilitaerVergleich from './components/MilitaerVergleich';
 import KnowledgeBase from './components/knowledge/KnowledgeBase';
+import Lagefortschreibung from './components/lage/Lagefortschreibung';
 import SearchOverlay from './components/SearchOverlay';
 import AuthModal from './components/AuthModal';
 
@@ -49,6 +50,7 @@ export default function App() {
         {activeTab === 'osint-lage' && <OsintLagePlattform />}
         {activeTab === 'mil-vergleich' && <MilitaerVergleich />}
         {activeTab === 'knowledge' && <KnowledgeBase />}
+        {activeTab === 'lage' && <Lagefortschreibung />}
       </main>
 
       <SearchOverlay />

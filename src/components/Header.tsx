@@ -1,4 +1,4 @@
-import { Search, Sun, Moon, Map as MapIcon, Globe, Layers, Home, User, Radio, Shield, Crosshair, Radar, Satellite, Swords, BookOpen } from 'lucide-react';
+import { Search, Sun, Moon, Map as MapIcon, Globe, Layers, Home, User, Radio, Shield, Crosshair, Radar, Satellite, Swords, BookOpen, Zap, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useRegion } from '../context/RegionContext';
@@ -12,6 +12,7 @@ const tabs = [
   { id: 'osint-lage' as const, label: 'OSINT Lage', icon: Satellite },
   { id: 'mil-vergleich' as const, label: 'Mil. Vergleich', icon: Swords },
   { id: 'knowledge' as const, label: 'Wissensdatenbank', icon: BookOpen },
+  { id: 'lage' as const, label: 'Lagefortschreibung', icon: Zap },
   { id: 'editor' as const, label: 'Karten-Editor', icon: Layers },
   { id: 'my-maps' as const, label: 'Meine Karten', icon: MapIcon },
 ];
@@ -79,6 +80,18 @@ export default function Header() {
           Ctrl+K
         </kbd>
       </button>
+
+      {/* WorldMonitor Tech Link */}
+      <a
+        href="https://tech.worldmonitor.app"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-theme bg-card text-muted hover:text-main transition-all text-xs font-medium"
+        title="WorldMonitor Tech"
+      >
+        <ExternalLink size={13} />
+        <span className="hidden sm:inline">Tech</span>
+      </a>
 
       {/* Home Button */}
       <button
